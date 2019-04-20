@@ -22,7 +22,6 @@
 #include <string>
 #include <set>
 #include <thread>
-#include <strsafe.h>
 
 
 //-------------------------------------------------------------------
@@ -58,5 +57,6 @@ using json = nlohmann::json;
 
 #define ASIO_STANDALONE
 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #endif //PCH_H

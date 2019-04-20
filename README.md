@@ -1,17 +1,12 @@
+# streamdeck-dcs
 
-`CPU` is a sample plugin demonstrating the [Stream Deck SDK](https://developer.elgato.com/documentation/stream-deck/).
+This Plugin (avionics.madjack.dcs.streamDeckPlugin) for Stream Deck allows you to send commands (controls) to DCS (via DCS-Bios).
 
-
-# Description
-
-`CPU` is a plugin that displays the CPU usage on a key.
-
+Based on the sample plugin `CPU` from the [Stream Deck SDK](https://developer.elgato.com/documentation/stream-deck/).
 
 # Features
 
 - code written in C++
-- cross-platform (macOS, Windows)
-- localized
 
 
 ![](screenshot.png)
@@ -19,9 +14,11 @@
 
 # Installation
 
-In the Release folder, you can find the file `com.elgato.cpu.streamDeckPlugin`. If you double-click this file on your machine, Stream Deck will install the plugin.
+In the Release folder, you can find the file `avionics.madjack.dcs.streamDeckPlugin`. Double-click this file and Stream Deck will install the plugin. Of course, you need at least one Stream Deck device, and its software.
 
 
 # Source code
 
-The Sources folder contains the source code of the plugin.
+The Sources folder contains the source code of the plugin. Icons on the screenshot are the work of pellelil, and you can find them here:
+[Stream Deck profile for DCS F18](https://www.digitalcombatsimulator.com/en/files/3303670/)
+

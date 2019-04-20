@@ -2,124 +2,86 @@
 /**
 @file       MyStreamDeckPlugin.cpp
 
-@brief      CPU plugin
+@brief      DCS-BIOS Commands from Streamdeck plugin
 
-@copyright  (c) 2018, Corsair Memory, Inc.
+@copyright  (c) 2019, Madjack Avionics, based on 
+			(c) 2018, Corsair Memory, Inc.
 			This source code is licensed under the MIT-style license found in the LICENSE file.
 
 **/
 //==============================================================================
 
-#include "MyStreamDeckPlugin.h"
-#include <atomic>
-
-#ifdef __APPLE__
-	#include "macOS/CpuUsageHelper.h"
-#else
-	#include "Windows/CpuUsageHelper.h"
-#endif
-
 #include "Common/ESDConnectionManager.h"
+#include "MyStreamDeckPlugin.h"
 
-class CallBackTimer
-{
-public:
-    CallBackTimer() :_execute(false) { }
+#pragma comment(lib, "Winmm.lib")
 
-    ~CallBackTimer()
-    {
-        if( _execute.load(std::memory_order_acquire) )
-        {
-            stop();
-        };
-    }
+#define DCS_ADDRESS "127.0.0.1"
+#define DCS_PORT 7778
 
-    void stop()
-    {
-        _execute.store(false, std::memory_order_release);
-        if(_thd.joinable())
-            _thd.join();
-    }
-
-    void start(int interval, std::function<void(void)> func)
-    {
-        if(_execute.load(std::memory_order_acquire))
-        {
-            stop();
-        };
-        _execute.store(true, std::memory_order_release);
-        _thd = std::thread([this, interval, func]()
-        {
-            while (_execute.load(std::memory_order_acquire))
-            {
-                func();
-                std::this_thread::sleep_for(std::chrono::milliseconds(interval));
-            }
-        });
-    }
-
-    bool is_running() const noexcept
-    {
-        return (_execute.load(std::memory_order_acquire) && _thd.joinable());
-    }
-
-private:
-    std::atomic<bool> _execute;
-    std::thread _thd;
-};
 
 MyStreamDeckPlugin::MyStreamDeckPlugin()
 {
-	mCpuUsageHelper = new CpuUsageHelper();
-	mTimer = new CallBackTimer();
-	mTimer->start(1000, [this]()
-	{
-		this->UpdateTimer();
-	});
+	unsigned short port = DCS_PORT;
+	char address_ascii[128] = DCS_ADDRESS;
+
+	memset(&m_serv_addr, 0, sizeof(m_serv_addr));
+	m_serv_addr.sin_family = AF_INET;
+	m_serv_addr.sin_port = htons(port);
+	socket_error = inet_pton(AF_INET, address_ascii, &(m_serv_addr.sin_addr));
+	if (socket_error != 0) {		// if != 0, OK
+		WSADATA wsaData;
+		socket_error = WSAStartup(MAKEWORD(2, 2), &wsaData);
+		if (socket_error == 0) {	// if == 0, OK
+			if ((m_sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+				socket_error = 1;	// if socket_error, there was an error
+			}
+		}
+	}
+
+	PlaySound(L"SystemExclamation", nullptr, SND_ASYNC);
 }
 
 MyStreamDeckPlugin::~MyStreamDeckPlugin()
 {
-	if(mTimer != nullptr)
-	{
-		mTimer->stop();
-		
-		delete mTimer;
-		mTimer = nullptr;
-	}
-	
-	if(mCpuUsageHelper != nullptr)
-	{
-		delete mCpuUsageHelper;
-		mCpuUsageHelper = nullptr;
-	}
+	closesocket(m_sockfd);
+	WSACleanup();
 }
 
-void MyStreamDeckPlugin::UpdateTimer()
+int MyStreamDeckPlugin::send_message(std::string buf)
 {
-	//
-	// Warning: UpdateTimer() is running in the timer thread
-	//
-	if(mConnectionManager != nullptr)
-	{
-		mVisibleContextsMutex.lock();
-		int currentValue = mCpuUsageHelper->GetCurrentCPUValue();
-		for (const std::string& context : mVisibleContexts)
-		{
-			mConnectionManager->SetTitle(std::to_string(currentValue) + "%", context, kESDSDKTarget_HardwareAndSoftware);
-		}
-		mVisibleContextsMutex.unlock();
-	}
+	ssize_t bytes_sent;
+	bytes_sent = sendto(m_sockfd, buf.c_str(), buf.length(), 0, (struct sockaddr*)&m_serv_addr, sizeof(m_serv_addr));
+	return bytes_sent == -1 ? -1 : 0;
 }
 
 void MyStreamDeckPlugin::KeyDownForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
-	// Nothing to do
+	json jsonSettings;
+	EPLJSONUtils::GetObjectByName(inPayload, "settings", jsonSettings);
+	std::string command = EPLJSONUtils::GetStringByName(jsonSettings, "command");
+	std::string value = EPLJSONUtils::GetStringByName(jsonSettings, "valueOn");
+	std::string valueAlt = EPLJSONUtils::GetStringByName(jsonSettings, "valueOff");
+
+	int res = 0;
+	std::string message(command + " " + value + "\n");
+	if (valueAlt.compare("TOGGLE"))
+		res = send_message(message);
 }
 
 void MyStreamDeckPlugin::KeyUpForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
-	// Nothing to do
+	json jsonSettings;
+	EPLJSONUtils::GetObjectByName(inPayload, "settings", jsonSettings);
+	std::string command = EPLJSONUtils::GetStringByName(jsonSettings, "command");
+	std::string value = EPLJSONUtils::GetStringByName(jsonSettings, "valueOff");
+	std::string valueAlt = EPLJSONUtils::GetStringByName(jsonSettings, "valueOn");
+	mConnectionManager->LogMessage(command + " " + value + "\n");
+
+	int res = 0;
+	std::string message(command + " " + value + "\n");
+	if (valueAlt.compare("TOGGLE"))
+		res = send_message(message);
 }
 
 void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
@@ -151,4 +113,9 @@ void MyStreamDeckPlugin::DeviceDidDisconnect(const std::string& inDeviceID)
 void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
 {
 	// Nothing to do
+}
+
+void MyStreamDeckPlugin::DidReceiveSettings(const std::string& inAction, const std::string& inContext, const json& inPayload, const std::string& inDeviceID)
+{
+	WillAppearForAction(inAction, inContext, inPayload, inDeviceID);
 }

@@ -1,0 +1,35 @@
+{
+  "Actions": [
+    {
+      "Icon": "iconDCS",
+      "Name": "DCS Control",
+      "States": [
+        {
+          "Image": "defaultImage",
+          "TitleAlignment": "middle",
+          "FontSize": "16"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "This action sends a command to DCS",
+      "UUID": "avionics.madjack.dcs.set"
+    }
+  ],
+  "SDKVersion": 2,
+  "Author": "MadJack",
+  "CodePath": "sd-dcs.exe",
+  "Description": "Lets you send DCS-BIOS control commands on pressing a key.",
+  "Name": "DCS",
+  "Icon": "iconDCS",
+  "Version": "0.9",
+  "PropertyInspectorPath": "propertyinspector/index.html",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinimumVersion": "4.1"
+  }
+}
