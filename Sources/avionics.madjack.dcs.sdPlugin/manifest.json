@@ -18,10 +18,11 @@
   "SDKVersion": 2,
   "Author": "MadJack",
   "CodePath": "sd-dcs.exe",
-  "Description": "Lets you send DCS-BIOS control commands on pressing a key.",
+  "Description": "Sends DCS-BIOS controls commands to DCS World aircraft, on pressing a key.",
   "Name": "DCS",
   "Icon": "iconDCS",
-  "Version": "0.9",
+  "Version": "0.95",
+  "URL": "https://github.com/toureiffel/streamdeck-dcs",
   "PropertyInspectorPath": "propertyinspector/index.html",
   "OS": [
     {

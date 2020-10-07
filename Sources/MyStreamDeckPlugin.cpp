@@ -11,10 +11,15 @@
 **/
 //==============================================================================
 
-#include "Common/ESDConnectionManager.h"
 #include "MyStreamDeckPlugin.h"
+#include <atomic>
+#include <set>
+
+#include "Common/ESDConnectionManager.h"
+
 
 #pragma comment(lib, "Winmm.lib")
+
 
 #define DCS_ADDRESS "127.0.0.1"
 #define DCS_PORT 7778
@@ -23,7 +28,7 @@
 MyStreamDeckPlugin::MyStreamDeckPlugin()
 {
 	unsigned short port = DCS_PORT;
-	char address_ascii[128] = DCS_ADDRESS;
+	char address_ascii[16] = DCS_ADDRESS;
 
 	memset(&m_serv_addr, 0, sizeof(m_serv_addr));
 	m_serv_addr.sin_family = AF_INET;
@@ -38,8 +43,6 @@ MyStreamDeckPlugin::MyStreamDeckPlugin()
 			}
 		}
 	}
-
-	PlaySound(L"SystemExclamation", nullptr, SND_ASYNC);
 }
 
 MyStreamDeckPlugin::~MyStreamDeckPlugin()
@@ -55,7 +58,7 @@ int MyStreamDeckPlugin::send_message(std::string buf)
 	return bytes_sent == -1 ? -1 : 0;
 }
 
-void MyStreamDeckPlugin::KeyDownForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
+void MyStreamDeckPlugin::KeyDownForAction(const std::string& inAction, const std::string& inContext, const json& inPayload, const std::string& inDeviceID)
 {
 	json jsonSettings;
 	EPLJSONUtils::GetObjectByName(inPayload, "settings", jsonSettings);
@@ -84,7 +87,7 @@ void MyStreamDeckPlugin::KeyUpForAction(const std::string& inAction, const std::
 		res = send_message(message);
 }
 
-void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
+void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const std::string& inContext, const json& inPayload, const std::string& inDeviceID)
 {
 	// Remember the context
 	mVisibleContextsMutex.lock();
@@ -92,7 +95,7 @@ void MyStreamDeckPlugin::WillAppearForAction(const std::string& inAction, const 
 	mVisibleContextsMutex.unlock();
 }
 
-void MyStreamDeckPlugin::WillDisappearForAction(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
+void MyStreamDeckPlugin::WillDisappearForAction(const std::string& inAction, const std::string& inContext, const json& inPayload, const std::string& inDeviceID)
 {
 	// Remove the context
 	mVisibleContextsMutex.lock();
@@ -100,7 +103,7 @@ void MyStreamDeckPlugin::WillDisappearForAction(const std::string& inAction, con
 	mVisibleContextsMutex.unlock();
 }
 
-void MyStreamDeckPlugin::DeviceDidConnect(const std::string& inDeviceID, const json &inDeviceInfo)
+void MyStreamDeckPlugin::DeviceDidConnect(const std::string& inDeviceID, const json& inDeviceInfo)
 {
 	// Nothing to do
 }
@@ -110,7 +113,7 @@ void MyStreamDeckPlugin::DeviceDidDisconnect(const std::string& inDeviceID)
 	// Nothing to do
 }
 
-void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::string& inContext, const json &inPayload, const std::string& inDeviceID)
+void MyStreamDeckPlugin::SendToPlugin(const std::string& inAction, const std::string& inContext, const json& inPayload, const std::string& inDeviceID)
 {
 	// Nothing to do
 }
